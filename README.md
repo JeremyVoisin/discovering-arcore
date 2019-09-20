@@ -6,7 +6,7 @@ If you would like to try ARCore, here is a sample app, developped to be presente
 
 Have a quick look at this video if you would know what this repo is about :
 
-<iframe width="420" height="315" src="http://www.youtube.com/embed/igoekAdzNyQ" frameborder="0" allowfullscreen></iframe>
+[![A mountain in your room](http://img.youtube.com/vi/igoekAdzNyQ/0.jpg)](http://www.youtube.com/watch?v=igoekAdzNyQ "A mountain in your room")
 
 ## Behind the scene
 
