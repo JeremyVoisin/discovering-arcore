@@ -1175,7 +1175,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 'Joindre une session CloudAnchors
+  m_Text: 'Join a CloudAnchors session
 
 '
 --- !u!222 &1141000411
@@ -1256,7 +1256,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Sessions en cours
+  m_Text: Current active sessions
 --- !u!222 &1159797554
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1407,7 +1407,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "Cr\xE9er une session"
+  m_Text: New session
 --- !u!222 &1213168935
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1486,7 +1486,9 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "A la d\xE9couverte\nd'ARCore"
+  m_Text: 'Discovering
+
+    ARCore'
 --- !u!222 &1283477514
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1565,7 +1567,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Exploration Solo
+  m_Text: Singleplayer
 --- !u!222 &1352547809
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1644,7 +1646,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Aucune session en cours
+  m_Text: No running sessions
 --- !u!222 &1372701523
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1857,7 +1859,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "Rafra\xEEchir"
+  m_Text: Refresh
 --- !u!222 &1500335704
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2158,7 +2160,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "Cr\xE9er ou rejoindre une session."
+  m_Text: Create or join a session.
 --- !u!222 &2013185515
 CanvasRenderer:
   m_ObjectHideFlags: 0

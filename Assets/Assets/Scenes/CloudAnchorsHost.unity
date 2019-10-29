@@ -238,7 +238,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Rechercher
+  m_Text: Search
 --- !u!222 &458352725
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -704,7 +704,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Recherche...
+  m_Text: Search...
 --- !u!222 &1361235181
 CanvasRenderer:
   m_ObjectHideFlags: 0
