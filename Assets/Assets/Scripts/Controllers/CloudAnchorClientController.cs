@@ -1,11 +1,16 @@
-﻿
-using GoogleARCore;
-using GoogleARCore.CrossPlatform;
+﻿using System.Collections.Generic;
+using Google.XR.ARCoreExtensions;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.XR.ARFoundation;
+using UnityEngine.XR.ARSubsystems;
 
 public class CloudAnchorClientController : CloudAnchorController
 {
+    public ARRaycastManager m_RaycastManager;
+    public ARAnchorManager m_AnchorManager;
+    private ARCloudAnchor _cloudAnchor;
+    
     /// <summary>
     /// The Unity Start() method.
     /// </summary>
@@ -25,6 +30,28 @@ public class CloudAnchorClientController : CloudAnchorController
         base.OnUpdate();
         if(m_CloudAnchorId != null && m_CurrentMode == ApplicationMode.Waiting)
             _ResolveAnchorFromId(m_CloudAnchorId);
+        else if (m_CurrentMode == ApplicationMode.Waiting)
+        {
+            CloudAnchorState cloudAnchorState = _cloudAnchor.cloudAnchorState;
+            if (cloudAnchorState == CloudAnchorState.Success)
+            {
+                Debug.LogError($"Client could not resolve Cloud Anchor {m_CloudAnchorId}");
+
+                OnAnchorResolved(false,$"Client could not resolve Cloud Anchor {m_CloudAnchorId}");
+                return;
+            }
+            
+            NetworkManagerController.m_Manager.client.Send(kSyncRequestId, new UpdateHostMessage());
+            m_CurrentMode = ApplicationMode.Ready;
+
+            SetWorldOrigin(_cloudAnchor.transform);
+            ((ClientMapBuilder)mapBuilder).SetSelectedPlane(m_AnchorManager.AddAnchor(_cloudAnchor.pose));
+            ((ClientMapBuilder)mapBuilder).ShowMap();
+
+            OnAnchorResolved(true, $"Resolved Cloud Anchor {m_CloudAnchorId}");
+            mapBuilder.transform.position = new Vector3(0, 0, 0);
+            _OnResolved(_cloudAnchor.transform);
+        }
     }
 
     /// <summary>
@@ -34,7 +61,7 @@ public class CloudAnchorClientController : CloudAnchorController
     private void _ResolveAnchorFromId(string cloudAnchorId)
     {
         // If device is not tracking, let's wait to try to resolve the anchor.
-        if (Session.Status != SessionStatus.Tracking)
+        if (ARSession.state != ARSessionState.SessionTracking)
         {
             return;
         }
@@ -45,28 +72,7 @@ public class CloudAnchorClientController : CloudAnchorController
         NetworkManagerController.m_Manager.client.RegisterHandler(kScaleId, ReceiveScale);
         NetworkManagerController.m_Manager.client.RegisterHandler(kRotationId, ReceiveRotation);
 
-        XPSession.ResolveCloudAnchor(m_CloudAnchorId).ThenAction((System.Action<CloudAnchorResult>)(result =>
-        {
-            if (result.Response != CloudServiceResponse.Success)
-            {
-                Debug.LogError(string.Format("Client could not resolve Cloud Anchor {0}: {1}",
-                                             m_CloudAnchorId, result.Response));
-
-                OnAnchorResolved(false, result.Response.ToString());
-                return;
-            }
-            
-            NetworkManagerController.m_Manager.client.Send(kSyncRequestId, new UpdateHostMessage());
-            m_CurrentMode = ApplicationMode.Ready;
-
-            SetWorldOrigin(result.Anchor.transform);
-            ((ClientMapBuilder)mapBuilder).SetSelectedPlane(Session.CreateAnchor(new Pose(result.Anchor.transform.position, result.Anchor.transform.rotation)));
-            ((ClientMapBuilder)mapBuilder).ShowMap();
-
-            OnAnchorResolved(true, result.Response.ToString());
-            mapBuilder.transform.position = new Vector3(0, 0, 0);
-            _OnResolved(result.Anchor.transform);
-        }));
+        _cloudAnchor = m_AnchorManager.ResolveCloudAnchorId(m_CloudAnchorId);
     }
 
     /// <summary>
@@ -130,13 +136,18 @@ public class CloudAnchorClientController : CloudAnchorController
 
     protected override void ProcessTouch(Touch touch)
     {
-        TrackableHit hit;
-        TrackableHitFlags raycastFilter =
-            TrackableHitFlags.PlaneWithinPolygon;
-        if (ARCoreWorldOriginHelper.Raycast(touch.position.x, touch.position.y,
-                raycastFilter, out hit))
+        
+        var m_Hits = new List<ARRaycastHit>();
+        var raycastFilter =
+            TrackableType.PlaneWithinPolygon |
+            TrackableType.FeaturePoint;
+
+        if (m_RaycastManager.Raycast(Input.GetTouch(0).position, m_Hits))
         {
-            m_LastPlacedAnchor = hit.Trackable.CreateAnchor(hit.Pose);
+            foreach (var hit in m_Hits)
+            {
+                m_LastPlacedAnchor = m_AnchorManager.AddAnchor(ARCoreWorldOriginHelper._WorldToAnchorPose(hit.pose));
+            }
         }
 
         if (_CanPlaceFlags())

@@ -1,8 +1,9 @@
 ﻿using UnityEngine;
 
 using System.Collections.Generic;
-using GoogleARCore;
-using GoogleARCore.Examples.Common;
+using TMPro.SpriteAssetUtilities;
+using UnityEngine.XR.ARFoundation;
+using UnityEngine.XR.ARSubsystems;
 
 /// <summary>
 /// A helper script to set the apparent world origin of ARCore through applying an offset to the
@@ -14,18 +15,12 @@ public class WorldOriginHelper : MonoBehaviour
     /// <summary>
     /// The transform of the ARCore Device.
     /// </summary>
-    public Transform ARCoreDeviceTransform;
+    public ARSessionOrigin SessionOrigin;
 
     /// <summary>
     /// A prefab for tracking and visualizing detected planes.
     /// </summary>
     public GameObject DetectedPlanePrefab;
-
-    /// <summary>
-    /// A list to hold new planes ARCore began tracking in the current frame. This object is used across
-    /// the application to avoid per-frame allocations.
-    /// </summary>
-    private List<DetectedPlane> m_NewPlanes = new List<DetectedPlane>();
 
     /// <summary>
     /// A list to hold the planes ARCore began tracking before the WorldOrigin was placed.
@@ -47,30 +42,7 @@ public class WorldOriginHelper : MonoBehaviour
     /// </summary>
     public void Update()
     {
-        // Check that motion tracking is tracking.
-        if (Session.Status != SessionStatus.Tracking)
-        {
-            return;
-        }
-
-        Pose worldPose = _WorldToAnchorPose(Pose.identity);
-
-        // Iterate over planes found in this frame and instantiate corresponding GameObjects to visualize them.
-        Session.GetTrackables<DetectedPlane>(m_NewPlanes, TrackableQueryFilter.New);
-        for (int i = 0; i < m_NewPlanes.Count; i++)
-        {
-            // Instantiate a plane visualization prefab and set it to track the new plane. The transform is set to
-            // the origin with an identity rotation since the mesh for our prefab is updated in Unity World
-            // coordinates.
-            GameObject planeObject = Instantiate(DetectedPlanePrefab,
-                                                 worldPose.position, worldPose.rotation, transform);
-            planeObject.GetComponent<DetectedPlaneVisualizer>().Initialize(m_NewPlanes[i]);
-
-            if (!m_IsOriginPlaced)
-            {
-                m_PlanesBeforeOrigin.Add(planeObject);
-            }
-        }
+       
     }
 
     /// <summary>
@@ -94,11 +66,11 @@ public class WorldOriginHelper : MonoBehaviour
 
         m_AnchorTransform = anchorTransform;
 
-        Pose worldPose = _WorldToAnchorPose(new Pose(ARCoreDeviceTransform.position,
-                                                     ARCoreDeviceTransform.rotation));
-        ARCoreDeviceTransform.SetPositionAndRotation(worldPose.position, worldPose.rotation);
+        var worldPose = _WorldToAnchorPose(new Pose(SessionOrigin.transform.position,
+                                                     SessionOrigin.transform.rotation));
+        SessionOrigin.transform.SetPositionAndRotation(worldPose.position, worldPose.rotation);
 
-        foreach (GameObject plane in m_PlanesBeforeOrigin)
+        foreach (var plane in m_PlanesBeforeOrigin)
         {
             if (plane != null)
             {
@@ -109,38 +81,11 @@ public class WorldOriginHelper : MonoBehaviour
     }
 
     /// <summary>
-    /// Performs a raycast against physical objects being tracked by ARCore. This function wraps
-    /// <c>Frame.Raycast</c> to add the necessary offset if the WorldOrigin is moved when a Cloud Anchor is placed.
-    /// Output the closest hit from the camera.
-    /// Note that the Unity's screen coordinate (0, 0)
-    /// starts from bottom left.
-    /// </summary>
-    /// <param name="x">Horizontal touch position in Unity's screen coordiante.</param>
-    /// <param name="y">Vertical touch position in Unity's screen coordiante.</param>
-    /// <param name="filter">A filter bitmask where each set bit in {@link TrackableHitFlags} represents a category
-    /// of raycast hits the method call should consider valid.</param>
-    /// <param name="hitResult">A {@link TrackableHit} that will be set if the raycast is successful.</param>
-    /// <returns><c>true</c> if the raycast had a hit, otherwise <c>false</c>.</returns>
-    public bool Raycast(float x, float y, TrackableHitFlags filter, out TrackableHit hitResult)
-    {
-        bool foundHit = Frame.Raycast(x, y, filter, out hitResult);
-        if (foundHit)
-        {
-            Pose worldPose = _WorldToAnchorPose(hitResult.Pose);
-            TrackableHit newHit = new TrackableHit(worldPose, hitResult.Distance, hitResult.Flags,
-                                                   hitResult.Trackable);
-            hitResult = newHit;
-        }
-
-        return foundHit;
-    }
-
-    /// <summary>
     /// Converts a pose from Unity world space to Anchor-relative space.
     /// </summary>
     /// <returns>A pose in Unity world space.</returns>
     /// <param name="pose">A pose in Anchor-relative space.</param>
-    private Pose _WorldToAnchorPose(Pose pose)
+    public Pose _WorldToAnchorPose(Pose pose)
     {
         if (!m_IsOriginPlaced)
         {

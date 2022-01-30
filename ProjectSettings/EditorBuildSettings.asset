@@ -17,4 +17,10 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Assets/Scenes/CloudAnchorsHost.unity
     guid: 7b7aefaceeee348c9b38e637293f06f5
-  m_configObjects: {}
+  m_configObjects:
+    UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: 4909e214b77531e4e9a19033bcbdbca1,
+      type: 2}
+    UnityEditor.XR.ARKit.ARKitSettings: {fileID: 11400000, guid: 173185cad383db949911cb044c9471ff,
+      type: 2}
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: ad94d925efef4a34283195527c4c9c67,
+      type: 2}

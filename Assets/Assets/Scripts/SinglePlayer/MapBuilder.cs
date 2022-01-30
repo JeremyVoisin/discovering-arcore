@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using GoogleARCore;
-using GoogleARCore.Examples.Common;
 using System;
 using UnityEngine.Networking;
+using UnityEngine.XR.ARFoundation;
+using UnityEngine.XR.ARSubsystems;
 
 public class MapBuilder : MonoBehaviour
 {
@@ -21,8 +21,7 @@ public class MapBuilder : MonoBehaviour
 
     protected List<MapTile> _mapTiles;
 
-    protected Anchor anchor;
-    private DetectedPlane detectedPlane;
+    protected ARAnchor anchor;
     private Pose pose;
     private float yOffset;
     public Camera firstPersonCamera;
@@ -45,13 +44,10 @@ public class MapBuilder : MonoBehaviour
     /// Resets the main anchor 
     /// </summary>
     /// <param name="newAnchor">The new anchor</param>
-    public void SetSelectedPlane(Anchor newAnchor)
+    public void SetSelectedPlane(ARAnchor newAnchor)
     {
         // Create the anchor at that point.
-        if (anchor != null)
-        {
-            Destroy(anchor);
-        }
+        Destroy(anchor);
         isCurrentlyTracking = false;
         anchor = newAnchor;
         CreateAnchor();
@@ -77,14 +73,14 @@ public class MapBuilder : MonoBehaviour
     /// </summary>
     private void Update()
     {
-        if (Session.Status != SessionStatus.Tracking)
+        if (ARSession.state != ARSessionState.SessionTracking)
         {
             return;
         }
 
         if (!isCurrentlyTracking)
         {
-            foreach (var detectedPlanes in FindObjectsOfType<DetectedPlaneVisualizer>())
+            foreach (var detectedPlanes in FindObjectsOfType<ARPlaneMeshVisualizer>())
             {
                 detectedPlanes.enabled = false;
                 detectedPlanes.transform.GetComponent<MeshRenderer>().enabled = false;
@@ -182,7 +178,7 @@ public class MapBuilder : MonoBehaviour
 
         if (!isCurrentlyTracking)
         {
-            Ray raycast = firstPersonCamera.ScreenPointToRay(Input.GetTouch(0).position);
+            Ray raycast = firstPersonCamera.ScreenPointToRay(touch.position);
             RaycastHit raycastHit;
             if (Physics.Raycast(raycast, out raycastHit))
             {

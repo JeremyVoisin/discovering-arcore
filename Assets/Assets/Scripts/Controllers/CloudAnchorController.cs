@@ -1,10 +1,5 @@
 ﻿using UnityEngine;
-using System.Collections;
-using GoogleARCore;
-using System;
-using GoogleARCore.Examples.Common;
-using UnityEngine.Networking;
-using System.Collections.Generic;
+using UnityEngine.XR.ARFoundation;
 
 
 public abstract class CloudAnchorController : MonoBehaviour
@@ -38,7 +33,7 @@ public abstract class CloudAnchorController : MonoBehaviour
     /// <summary>
     /// The last placed anchor.
     /// </summary>
-    protected Anchor m_LastPlacedAnchor = null;
+    protected ARAnchor m_LastPlacedAnchor = null;
 
     /// <summary>
     /// The current cloud anchor mode.
@@ -156,7 +151,7 @@ public abstract class CloudAnchorController : MonoBehaviour
         var sleepTimeout = SleepTimeout.NeverSleep;
 
         // Only allow the screen to sleep when not tracking.
-        if (Session.Status != SessionStatus.Tracking)
+        if (ARSession.state != ARSessionState.SessionTracking)
         {
             const int lostTrackingSleepTimeout = 15;
             sleepTimeout = lostTrackingSleepTimeout;
@@ -165,14 +160,9 @@ public abstract class CloudAnchorController : MonoBehaviour
         Screen.sleepTimeout = sleepTimeout;
 
         // Quit if ARCore was unable to connect and give Unity some time for the toast to appear.
-        if (Session.Status == SessionStatus.ErrorPermissionNotGranted)
+        if (ARSession.state != ARSessionState.Unsupported)
         {
             _ShowAndroidToastMessage("Camera permission is needed to run this application.");
-            Invoke("_DoQuit", 0.5f);
-        }
-        else if (Session.Status.IsError())
-        {
-            _ShowAndroidToastMessage("ARCore encountered a problem connecting. Please start the app again.");
             Invoke("_DoQuit", 0.5f);
         }
     }

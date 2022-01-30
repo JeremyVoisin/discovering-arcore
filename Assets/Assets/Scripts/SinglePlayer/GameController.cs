@@ -1,5 +1,7 @@
-﻿using UnityEngine;
-using GoogleARCore;
+﻿using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.XR.ARFoundation;
+using UnityEngine.XR.ARSubsystems;
 
 public class GameController : MonoBehaviour
 {
@@ -7,7 +9,11 @@ public class GameController : MonoBehaviour
 
     private float initialFingersDistance;
     private Vector3 initialScale;
+    public ARSession Session;
+   
+    public ARAnchorManager m_AnchorManager;
 
+    public ARRaycastManager m_RaycastManager;
 
     private bool isCurrentlyTracking = true;
 
@@ -18,7 +24,7 @@ public class GameController : MonoBehaviour
     void Update()
     {
         // The session status must be Tracking in order to access the Frame.
-        if (Session.Status != SessionStatus.Tracking)
+        if (ARSession.state != ARSessionState.SessionTracking)
         {
             int lostTrackingSleepTimeout = 15;
             Screen.sleepTimeout = lostTrackingSleepTimeout;
@@ -59,24 +65,29 @@ public class GameController : MonoBehaviour
             return;
         }
 
-        TrackableHit hit;
-        TrackableHitFlags raycastFilter =
-            TrackableHitFlags.PlaneWithinPolygon |
-            TrackableHitFlags.FeaturePointWithSurfaceNormal;
-
-        if (Frame.Raycast(touch.position.x, touch.position.y, raycastFilter, out hit))
+        var m_Hits = new List<ARRaycastHit>();
+        var raycastFilter =
+            TrackableType.PlaneWithinPolygon |
+            TrackableType.FeaturePoint;
+        
+        if (m_RaycastManager.Raycast(Input.GetTouch(0).position, m_Hits))
         {
-            Anchor anchor = hit.Trackable.CreateAnchor(hit.Pose);
-            SetSelectedPlane(anchor);
-            isCurrentlyTracking = false;
+            foreach (var hit in m_Hits)
+            {
+                var anchor = m_AnchorManager.AddAnchor(new Pose(hit.pose.position, Quaternion.identity));
+                SetSelectedPlane(anchor);
+                isCurrentlyTracking = false;
+            }
         }        
     }
+    
+    
 
     /// <summary>
     /// After an anchor was created, set it as the main anchor and as the map's parent
     /// </summary>
     /// <param name="anchor">The new created anchor</param>
-    void SetSelectedPlane(Anchor anchor)
+    void SetSelectedPlane(ARAnchor anchor)
     {
         mapBuilder.SetSelectedPlane(anchor);
     }

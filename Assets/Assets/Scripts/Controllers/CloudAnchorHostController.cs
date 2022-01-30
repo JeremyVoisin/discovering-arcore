@@ -1,10 +1,18 @@
-﻿using GoogleARCore;
-using GoogleARCore.CrossPlatform;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.XR.ARFoundation;
+using Google.XR.ARCoreExtensions;
+using UnityEngine.XR.ARSubsystems;
 
 public class CloudAnchorHostController : CloudAnchorController
 {
+    
+    public ARRaycastManager m_RaycastManager;
+    public ARAnchorManager m_AnchorManager;
+    private ARCloudAnchor _cloudAnchor;
+    private bool newlyPlacedAnchor = false;
+    
     /// <summary>
     /// The Unity Start() method.
     /// </summary>
@@ -23,25 +31,36 @@ public class CloudAnchorHostController : CloudAnchorController
         NetworkServer.RegisterHandler(kSyncRequestId, SyncRequestMessage);
         NetworkServer.RegisterHandler(kScaleId, ReceiveScale);
 
-        var anchor = (Anchor)lastPlacedAnchor;
+        var anchor = (ARAnchor)lastPlacedAnchor;
+        _cloudAnchor = m_AnchorManager.HostCloudAnchor(anchor, 1);
+        newlyPlacedAnchor = true;
+    }
 
-        XPSession.CreateCloudAnchor(anchor).ThenAction(result =>
+    void Update()
+    {
+        base.Update();
+        if (_cloudAnchor && newlyPlacedAnchor)
         {
-            if (result.Response != CloudServiceResponse.Success)
+            newlyPlacedAnchor = false;
+            // Check the Cloud Anchor state.
+            CloudAnchorState cloudAnchorState = _cloudAnchor.cloudAnchorState;
+            if (cloudAnchorState == CloudAnchorState.Success)
             {
-                Debug.LogError(string.Format("Failed to host Cloud Anchor: {0}", result.Response));
+                m_CloudAnchorId = _cloudAnchor.cloudAnchorId;
+                NetworkServer.RegisterHandler(kAskCloudId, AskCloudMessage);
+                NetworkServer.SendToAll(kReceivedCloudId, new StartSessionMessage() { cloudId =  m_CloudAnchorId });
 
-                OnAnchorHosted(false, result.Response.ToString());
-                return;
+                OnAnchorHosted(true, "OK");
             }
-            m_CloudAnchorId = result.Anchor.CloudId;
-            NetworkServer.RegisterHandler(kAskCloudId, AskCloudMessage);
-            NetworkServer.SendToAll(kReceivedCloudId, new StartSessionMessage() { cloudId =  m_CloudAnchorId });
-
-            OnAnchorHosted(true, result.Response.ToString());
-
-        });
-
+            else if (cloudAnchorState == CloudAnchorState.TaskInProgress)
+            {
+                // Wait, not ready yet.
+            }
+            else
+            {
+                OnAnchorHosted(false, "Failed to host Cloud Anchor");
+            }
+        }
     }
 
     /// <summary>
@@ -101,13 +120,17 @@ public class CloudAnchorHostController : CloudAnchorController
     /// </summary>
     protected override void ProcessTouch(Touch touch)
     {
-        TrackableHit hit;
-        TrackableHitFlags raycastFilter =
-            TrackableHitFlags.PlaneWithinPolygon;
-        if (ARCoreWorldOriginHelper.Raycast(touch.position.x, touch.position.y,
-                raycastFilter, out hit))
+        var m_Hits = new List<ARRaycastHit>();
+        var raycastFilter =
+            TrackableType.PlaneWithinPolygon |
+            TrackableType.FeaturePoint;
+
+        if (m_RaycastManager.Raycast(Input.GetTouch(0).position, m_Hits))
         {
-            m_LastPlacedAnchor = hit.Trackable.CreateAnchor(hit.Pose);
+            foreach (var hit in m_Hits)
+            {
+                m_LastPlacedAnchor = m_AnchorManager.AddAnchor(ARCoreWorldOriginHelper._WorldToAnchorPose(hit.pose));
+            }
         }
 
         if (m_LastPlacedAnchor != null)
